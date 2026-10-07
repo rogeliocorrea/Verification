@@ -1,11 +1,15 @@
 `default_nettype none
 
-module in_detector
+interface seq_if (input bit clk);
+    logic rst_n;
+    logic in;
+    logic vld;
+    logic found;
+endinterface
+
+module sequence_detector
 (
-    input wire clk,
-    input wire rst_n,
-    input logic in,
-    output logic found
+    seq_if vif
 );
 
 //This will detect the sequence 1101, overlapping
@@ -35,35 +39,56 @@ end
 always_comb 
 begin
     next_state = cur_state;
-    found = 'b0;
+    vif.found = 'b0;
 
     case(cur_state)
         START:
         begin
-            if(in == 0) next_state = START;
-            else next_state = FIRST;
+            if(vif.vld)
+            begin
+                if(vif.in == 0) next_state = START;
+                else next_state = FIRST;
+            end
+            else next_state = cur_state;
         end
         FIRST:
         begin
-            if(in == 0) next_state = START;
-            else next_state = SECOND;        
+            if(vif.vld)
+            begin
+                if(vif.in == 0) next_state = START;
+                else next_state = SECOND;        
+            end
+            else next_state = cur_state;
         end
         SECOND:
         begin
-            if(in == 0) next_state = THIRD;
-            else next_state = FIRST;           
+            if(vif.vld)
+            begin
+                if(vif.in == 0) next_state = THIRD;
+                else next_state = FIRST;    
+            end       
+            else next_state = cur_state;
         end
 
         THIRD:
         begin
-            if(in == 0) next_state = START;
-            else next_state = FOUND;            
+            if(vif.vld)
+            begin
+                if(vif.in == 0) next_state = START;
+                else next_state = FOUND;  
+            end      
+            else next_state = cur_state;    
         end
         
         FOUND:
         begin
-            if(in == 0) next_state = START;
-            else next_state = FIRST;            
+            vif.found = 'b1;
+            if(vif.vld)
+            begin
+                if(vif.in == 0) next_state = START;
+                else next_state = FIRST;    
+            end
+            else next_state = cur_state;
         end
 
         default: next_state = START;
